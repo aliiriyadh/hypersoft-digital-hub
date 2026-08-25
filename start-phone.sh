@@ -60,7 +60,7 @@ if ! psql "$DATABASE_URL" -tAc "SELECT 1" >/dev/null 2>&1; then
 fi
 
 printf 'تجهيز جداول الموقع...\n'
-pnpm --filter @workspace/db run push >/dev/null
+pnpm --filter @workspace/db run push
 
 cleanup() {
   trap - INT TERM EXIT
