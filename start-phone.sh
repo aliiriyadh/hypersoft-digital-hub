@@ -42,21 +42,23 @@ source "$PHONE_ENV"
 export SESSION_SECRET ADMIN_INITIAL_PASSWORD
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres@127.0.0.1:5432/hypersoft}"
 
-if [ ! -f "$PGDATA/PG_VERSION" ]; then
-  printf 'تهيئة قاعدة البيانات المحلية لأول مرة...\n'
-  initdb -D "$PGDATA" -A trust --username=postgres >/dev/null
-fi
+if ! pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+  if [ ! -f "$PGDATA/PG_VERSION" ]; then
+    printf 'تهيئة قاعدة البيانات المحلية لأول مرة...\n'
+    initdb -D "$PGDATA" -A trust --username=postgres >/dev/null
+  fi
 
-if ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
-  pg_ctl -D "$PGDATA" -l "$PGDATA/server.log" -o "-h 127.0.0.1 -p 5432" start >/dev/null
-  for _ in $(seq 1 30); do
-    if pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then break; fi
-    sleep 1
-  done
+  if ! pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
+    pg_ctl -D "$PGDATA" -l "$PGDATA/server.log" -o "-h 127.0.0.1 -p 5432" start >/dev/null
+    for _ in $(seq 1 30); do
+      if pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then break; fi
+      sleep 1
+    done
+  fi
 fi
 
 if ! psql "$DATABASE_URL" -tAc "SELECT 1" >/dev/null 2>&1; then
-  createdb -h 127.0.0.1 -U postgres hypersoft 2>/dev/null || true
+  createdb -h 127.0.0.1 -p 5432 -U postgres hypersoft 2>/dev/null || true
 fi
 
 printf 'تجهيز جداول الموقع...\n'
