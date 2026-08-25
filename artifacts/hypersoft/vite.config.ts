@@ -63,6 +63,16 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
+    ...(process.env.PHONE_MODE === "1"
+      ? {
+          proxy: {
+            "/api": {
+              target: "http://127.0.0.1:5001",
+              changeOrigin: true,
+            },
+          },
+        }
+      : {}),
     fs: {
       strict: true,
     },
