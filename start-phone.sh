@@ -9,6 +9,7 @@ PHONE_ENV="$ROOT_DIR/.phone.env"
 PGDATA="$ROOT_DIR/.phone-postgres"
 API_PORT="${API_PORT:-5001}"
 WEB_PORT="${WEB_PORT:-5000}"
+USE_TUNNEL="${1:-}"
 
 fail() {
   printf '\nخطأ: %s\n' "$1" >&2
@@ -20,6 +21,7 @@ command -v pnpm >/dev/null 2>&1 || fail "pnpm غير مثبت. نفّذ: npm ins
 command -v initdb >/dev/null 2>&1 || fail "PostgreSQL غير مثبت. نفّذ: pkg install postgresql"
 command -v pg_ctl >/dev/null 2>&1 || fail "أداة pg_ctl غير موجودة. أعد تثبيت PostgreSQL عبر: pkg reinstall postgresql"
 command -v createdb >/dev/null 2>&1 || fail "أداة createdb غير موجودة. أعد تثبيت PostgreSQL عبر: pkg reinstall postgresql"
+[ "$USE_TUNNEL" != "--tunnel" ] || command -v cloudflared >/dev/null 2>&1 || fail "للنفق ثبّت cloudflared أولًا، ثم أعد التشغيل."
 
 if [ ! -f "$PHONE_ENV" ]; then
   SESSION_SECRET="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
@@ -64,6 +66,7 @@ cleanup() {
   trap - INT TERM EXIT
   [ -n "${API_PID:-}" ] && kill "$API_PID" 2>/dev/null || true
   [ -n "${WEB_PID:-}" ] && kill "$WEB_PID" 2>/dev/null || true
+  [ -n "${TUNNEL_PID:-}" ] && kill "$TUNNEL_PID" 2>/dev/null || true
 }
 trap cleanup INT TERM EXIT
 
@@ -79,5 +82,8 @@ printf 'لإيقاف الموقع اضغط Ctrl+C.\n\n'
 API_PID=$!
 (PORT="$WEB_PORT" BASE_PATH="/" PHONE_MODE=1 pnpm --filter @workspace/hypersoft run dev) &
 WEB_PID=$!
+
+[ "$USE_TUNNEL" = "--tunnel" ] && (cloudflared tunnel --url "http://127.0.0.1:$WEB_PORT") &
+TUNNEL_PID=$!
 
 wait "$API_PID" "$WEB_PID"
