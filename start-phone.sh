@@ -42,7 +42,7 @@ source "$PHONE_ENV"
 export SESSION_SECRET ADMIN_INITIAL_PASSWORD
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres@127.0.0.1:5432/hypersoft}"
 
-if ! pg_isready -h 127.0.0.1 -p 5432 >/dev/null 2>&1; then
+if ! psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -tAc "SELECT 1" >/dev/null 2>&1; then
   if [ ! -f "$PGDATA/PG_VERSION" ]; then
     printf 'تهيئة قاعدة البيانات المحلية لأول مرة...\n'
     initdb -D "$PGDATA" -A trust --username=postgres >/dev/null
