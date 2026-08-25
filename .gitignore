@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local phone runtime secrets and database
+.phone.env
+.phone-postgres/
